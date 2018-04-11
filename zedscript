@@ -1,0 +1,7 @@
+#!/bin/sh
+dir=${0%/*}
+if [ "$dir" = "$0" ]; then
+	dir="."
+fi
+
+./lua main.lua $dir

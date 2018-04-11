@@ -1,7 +1,7 @@
 function linked()
 	t = {}
-	t.first = {[t] = {next = nil}}
-	t.last = {[t] = {prev = t.first}}
+	t.first = {id = "first", [t] = {next = nil}}
+	t.last = {id = "last", [t] = {prev = t.first}}
 	t.first[t].next = t.last
 	
 	function t:push(v)
@@ -37,6 +37,10 @@ function linked()
 		if ref[self].next then
 			ref[self].next[self].prev = ref[self].prev
 		end
+	end
+
+	function t:get_first()
+		return self.first[self].next
 	end
 
 	return t
@@ -186,7 +190,12 @@ end
 function eat(comp)
 	function pull(dist)
 		local ret = comp[pos + dist]
-		table.remove(comp, pos + dist)
+		local pointer = ret[comp].next
+		while pointer[comp].next do
+			pointer.i = pointer.i - 1
+			pointer = pointer[comp].next
+		end
+		comp:pull(ret)
 		if dist < 0 then
 			pos = pos - 1
 		end
@@ -199,11 +208,14 @@ function eat(comp)
 
 	for i, t in pairs(tokens) do
 		if t.eat then
-			for pos, tok in pairs(comp) do
+			local tok = comp.first[comp].next
+			while tok[comp].next do
 				if tok.type == t.type then
-					_G.pos = pos
+					_G.pos = tok.i
 					tok:eat()
+					print(tok.value)
 				end
+				tok = tok[comp].next
 			end
 		end
 	end
@@ -222,5 +234,5 @@ while true do
 	if code:find("exit") then
 		break
 	end
-	print( ({(compile(code)[1].value.." "):gsub(".0 "," ")})[1] )
+	print( ({(compile(code):get_first().value.." "):gsub(".0 "," ")})[1] )
 end

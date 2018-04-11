@@ -1,39 +1,41 @@
 function linked()
 	t = {}
-	t.first = {next = nil}
-	t.last = {prev = first}
-	t.first.next = t.last
+	t.first = {[t] = {next = nil}}
+	t.last = {[t] = {prev = t.first}}
+	t.first[t].next = t.last
 	
 	function t:push(v)
 		local ref = self.first;
-		while ref.next.val ~= nil and ref.next.val < v do
-			ref = ref.next;
+		while ref[self].next.i ~= nil and ref[self].next.i < v.i do
+			ref = ref[self].next;
 		end
-		ref.next = {val = v, next = ref.next, prev = ref}
-		if ref.next.next then
-			ref.next.next.prev = ref.next
+		ref[self].next = v--{i = v, next = ref.next, prev = ref}
+		v[self] = {next = ref[self].next, prev = ref}
+		if ref[self].next[self].next then
+			ref[self].next[self].next[self].prev = ref[self].next
 		end
-		return ref.next
+		return ref[self].next
 	end
 	
 	function t:push_back(v)
 		local ref = self.last;
-		while ref.prev.val ~= nil and ref.prev.val > v do
-			ref = ref.prev;
+		while ref[self].prev.i ~= nil and ref[self].prev.i > v.i do
+			ref = ref[self].prev;
 		end
-		ref.prev = {val = v, prev = ref.prev, next = ref}
-		if ref.prev.prev then
-			ref.prev.prev.next = ref.prev
+		ref[self].prev = v
+		v[self] = {prev = ref[self].prev, next = ref}
+		if ref[self].prev[self].prev then
+			ref[self].prev[self].prev[self].next = ref[self].prev
 		end
-		return ref.prev
+		return ref[self].prev
 	end
 	
 	function t:pull(ref)
-		if ref.prev then
-			ref.prev.next = ref.next
+		if ref[self].prev then
+			ref[self].prev[self].next = ref[self].next
 		end
-		if ref.next then
-			ref.next.prev = ref.prev
+		if ref[self].next then
+			ref[self].next[self].prev = ref[self].prev
 		end
 	end
 
@@ -168,11 +170,12 @@ function tokenize(code, pos, comp)
 
 	for i, token in pairs(tokens) do
 		local tok, inc, halt = token:get(code, pos)
+		if halt then
+			return comp, pos
+		end
 		if tok ~= nil then
-			if halt then
-				return comp, pos
-			end
-			comp[#comp + 1] = tok
+			tok.i = (comp.last[comp].prev.i or 0) + 1
+			comp:push_back(tok)
 			return tokenize(code, pos + inc, comp)
 		end
 	end
@@ -207,7 +210,7 @@ function eat(comp)
 end
 
 function compile(code,pos)
-	comp, i = tokenize(code, pos or 1, {})
+	comp, i = tokenize(code, pos or 1, linked())
 	eat(comp)
 	return comp, i
 end

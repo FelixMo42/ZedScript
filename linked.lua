@@ -14,25 +14,43 @@ end
 
 local function push_back(self, v)
 	local ref = self.last;
-	while ref[self].prev.i ~= nil and v.i >= ref[self].prev.i do
+	while ref[self].prev.i ~= nil and v.i <= ref[self].prev.i do
 		ref = ref[self].prev;
 	end
 
 	v[self] = {prev = ref[self].prev, next = ref}
 
-	ref[self].prev[self].prev = v
+	ref[self].prev[self].next = v
 	ref[self].prev = v
 
 	return v
 end
 
-local function pull(self, ref)
+local function pull(self, ref, i)
+	if i and i >= 1 then
+		for i = 1, i do
+			ref = ref[self].next
+		end
+	elseif i and i <= -1 then
+		for i = 1, math.abs(i) do
+			ref = ref[self].prev
+		end
+	end
 	if ref[self].prev then
 		ref[self].prev[self].next = ref[self].next
 	end
 	if ref[self].next then
 		ref[self].next[self].prev = ref[self].prev
 	end
+	return ref
+end
+
+local function replace(self, ref, new)
+	new.i = ref.i
+	ref[self].next[self].prev = new
+	ref[self].prev[self].next = new
+	new[self] = ref[self]
+	return new
 end
 
 function get_first(self)
@@ -57,9 +75,10 @@ function linked()
 
 	t.push = push
 	t.push_back = push_back
-	t.pull = t.pull
+	t.pull = pull
 	t.get_first = get_first
 	t.loop = loop
+	t.replace = replace
 
 	return t
 end

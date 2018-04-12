@@ -33,14 +33,11 @@ end
 
 function eat(comp)
 	function pull(dist)
-		local ret = comp[pos + dist]
-		local pointer = ret[comp].next
-		comp:pull(ret)
-		return ret
+		return comp:pull(pos, dist)
 	end
 
 	function set(tok)
-		comp[pos] = tok
+		pos = comp:replace(pos, tok)
 	end
 
 	for i, t in pairs(tokens) do
@@ -50,7 +47,6 @@ function eat(comp)
 				if tok.type == t.type then
 					_G.pos = tok
 					tok:eat()
-					print(tok.value)
 				end
 				tok = tok[comp].next
 			end
@@ -60,16 +56,8 @@ end
 
 function compile(code,pos)
 	comp, i = tokenize(code, pos or 1, linked())
-	--eat(comp)
-	--return comp, i
-
-	comp:push_back({i = 100})
-	comp:push_back({i = 120})
-	comp:push_back({i = 50})
-	
-	for tok in comp:loop() do
-		print(tok.i)
-	end
+	eat(comp)
+	return comp, i
 end
 
 --main loop
@@ -79,6 +67,5 @@ while true do
 	if code:find("exit") then
 		break
 	end
-	compile(code)
-	--print( ({(compile(code):get_first().value.." "):gsub(".0 "," ")})[1] )
+	print( ({(compile(code):get_first().value.." ")})[1] )
 end

@@ -9,6 +9,8 @@ for k, v in pairs(tokens) do
 	tokens[v.type] = v
 end
 
+vars = {}
+
 --main funcs
 
 function tokenize(code, pos, comp)
@@ -47,6 +49,7 @@ function eat(comp)
 				if tok.type == t.type then
 					_G.pos = tok
 					tok:eat()
+					--[[ debug ] ] print("---------"); for v in comp:loop() do print(v.value.." - "..v.type) end print("---------"); --]]
 				end
 				tok = tok[comp].next
 			end
@@ -67,5 +70,6 @@ while true do
 	if code:find("exit") then
 		break
 	end
-	print( ({(compile(code):get_first().value.." ")})[1] )
+	print( vars["x"] )
+	print( ({(compile(code):get_first().value.." "):gsub( "%.0" , "" )})[1] )
 end

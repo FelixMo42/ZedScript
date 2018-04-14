@@ -2,7 +2,13 @@ require "linked"
 tokens = require "tokens"
 
 function new(self, val)
-	return setmetatable({value = val}, {__index = self} )
+	return setmetatable({
+		value = val
+	}, {
+		__index = function(s,key)
+			return tokens[rawget(s,"type") or self.type][key]
+		end
+	} )
 end
 
 for k, v in pairs(tokens) do
@@ -70,6 +76,5 @@ while true do
 	if code:find("exit") then
 		break
 	end
-	print( vars["x"] )
 	print( ({(compile(code):get_first().value.." "):gsub( "%.0" , "" )})[1] )
 end

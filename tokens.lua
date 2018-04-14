@@ -155,15 +155,14 @@ return {
 	type = "var",
 	get = function(self, code,pos)
 		if code:sub(pos,pos):match("%W") then return end
-		local leng = 1
-		while pos + leng + 1 <= #code and code:sub(pos,pos + leng + 1):match("a-bA-B0-9","") do
+		local leng = 0
+		while pos + leng + 1 <= #code and not code:sub(pos + leng + 1,pos + leng + 1):match("%W") do
 			leng = leng + 1
 		end
 		--print(": "..code:sub(pos,pos + leng))
 		local name = code:sub(pos,pos + leng)
 		local var = vars[name] or new(tokens["nil"])
 		vars[name] = var
-		print(":"..name..":")
 		return setmetatable( {}, {
 			__newindex = function(self,key,val)
 				if key == "type" then

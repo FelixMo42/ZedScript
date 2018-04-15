@@ -64,7 +64,7 @@ function eat(comp)
 end
 
 function compile(code,pos)
-	comp, i = tokenize(code, pos or 1, linked())
+	local comp, i = tokenize(code, pos or 1, linked())
 	eat(comp)
 	return comp, i
 end
@@ -72,6 +72,7 @@ end
 --main loop
 
 while true do
+	io.write("> ")
 	code = io.read("*l").." "
 	if code:find("exit") then
 		break

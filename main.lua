@@ -1,5 +1,15 @@
+--set up
+
 require "linked"
 tokens = require "tokens"
+
+for k, v in pairs(tokens) do
+	tokens[v.type] = v
+end
+
+vars = {}
+
+--functions
 
 function new(self, val)
 	return setmetatable({
@@ -11,11 +21,9 @@ function new(self, val)
 	} )
 end
 
-for k, v in pairs(tokens) do
-	tokens[v.type] = v
+function starts(code, pos, val)
+	return code:sub(pos, pos + #val - 1) == "if" and code:sub(pos + #val, pos + #val):match("%W")
 end
-
-vars = {}
 
 --main funcs
 
@@ -41,7 +49,7 @@ end
 
 function eat(comp)
 	function pull(dist)
-		return comp:pull(pos, dist)
+		return comp:pull(pos, dist) or tokens["nil"]
 	end
 
 	function set(tok)
@@ -55,7 +63,6 @@ function eat(comp)
 				if tok.type == t.type then
 					_G.pos = tok
 					tok:eat()
-					--[[ debug ] ] print("---------"); for v in comp:loop() do print(v.value.." - "..v.type) end print("---------"); --]]
 				end
 				tok = tok[comp].next
 			end

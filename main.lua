@@ -8,6 +8,7 @@ for k, v in pairs(tokens) do
 end
 
 vars = {}
+debug = false
 
 --functions
 
@@ -40,6 +41,12 @@ function tokenize(code, pos, comp)
 		if tok ~= nil then
 			tok.i = (comp.last[comp].prev.i or 0) + 1
 			comp:push_back(tok)
+
+			if debug then
+				for v in comp:loop() do print((v.value or " ").." - "..v.type) end
+				print("---------")
+			end
+
 			return tokenize(code, pos + inc, comp)
 		end
 	end
@@ -63,6 +70,10 @@ function eat(comp)
 				if tok.type == t.type then
 					_G.pos = tok
 					tok:eat()
+					if debug then
+						for v in comp:loop() do print((v.value or " ").." - "..v.type) end
+						print("---------")
+					end
 				end
 				tok = tok[comp].next
 			end
@@ -71,7 +82,16 @@ function eat(comp)
 end
 
 function compile(code,pos)
+	code = code.." "
+	if debug then
+		print("==== token:")
+	end
 	local comp, i = tokenize(code, pos or 1, linked())
+	if debug then
+		print("====== eat:")
+		for v in comp:loop() do print((v.value or " ").." - "..v.type) end
+		print("---------")
+	end
 	eat(comp)
 	return comp, i
 end
@@ -80,7 +100,7 @@ end
 
 while true do
 	io.write("> ")
-	code = io.read("*l").." "
+	code = io.read("*l")
 	if code:find("exit") then
 		break
 	end

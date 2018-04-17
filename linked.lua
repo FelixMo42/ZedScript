@@ -18,12 +18,17 @@ local function push_back(self, v)
 		ref = ref[self].prev;
 	end
 
-	v[self] = {prev = ref[self].prev, next = ref}
+	local index = setmetatable({
+		[self] = {prev = ref[self].prev, next = ref}
+	}, {
+		__index = v,
+		__newindex = v
+	})
 
-	ref[self].prev[self].next = v
-	ref[self].prev = v
+	ref[self].prev[self].next = index
+	ref[self].prev = index
 
-	return v
+	return index
 end
 
 local function pull(self, ref, i)

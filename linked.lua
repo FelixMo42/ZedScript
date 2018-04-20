@@ -58,7 +58,7 @@ local function replace(self, ref, new)
 	return new
 end
 
-function get_first(self)
+local function get_first(self)
 	return self.first[self].next
 end
 

@@ -1,13 +1,13 @@
 -- These are the tokens in the langauge in the order of operation
 
-return {
+tokens = {
 
 ---- **** DATA **** ----
 
 --[[ number ]] {
 	type = "number",
 	get = function(self, code, pos)
-		if code:sub(pos, pos) ~= " " and (tonumber(code:sub(pos, pos + 1)) ~= nil) then
+		if (code:sub(pos, pos) ~= " " and tonumber(code:sub(pos, pos + 1)) ~= nil) or tonumber(code:sub(pos, pos)) then
 			local leng = 0
 			while pos + leng + 1 <= #code and tonumber(code:sub(pos, pos + leng + 1)) ~= nil do
 				leng = leng + 1
@@ -35,11 +35,21 @@ return {
 		end
 	end
 },
+--[[ bool ]] {
+	type = "bool",
+	get = function(self, code, pos)
+		if starts(code, pos, "true") then
+			return new(self, true)
+		elseif starts(code, pos, "false") then
+			return new(self, false)
+		end
+	end
+},
 --[[ nil ]] {
 	type = "nil",
 	get = function(self, code, pos)
 		if starts(code, pos, "nil") then
-			return new(tokens["nil"]), 3
+			return new(self), 3
 		end
 	end
 },
@@ -53,8 +63,8 @@ return {
 			return tokens.ended, 1, true
 		end
 		if code:sub(pos, pos) == "(" then
-			comp, i = compile(code, pos + 1)
-			return comp:get_first(), i - pos + 1
+			comp, i = compile(code, pos + 1, ")")
+			return comp:get_first(), i - pos
 		end
 	end
 },
@@ -72,7 +82,7 @@ return {
 --[[ muler ]] {
 	type = "muler",
 	get = function(self, code, pos)
-		if code:sub(pos, pos) == "*" or code:sub(pos, pos) == "/" or code:sub(pos, pos) == "%" then
+		if ("*/%"):find(code:sub(pos, pos)) then
 			return new(self, code:sub(pos, pos)), 1
 		end
 	end,
@@ -93,11 +103,11 @@ return {
 				end
 				set( new(tokens.number, ret) )
 			else
-				set( new(tokens.number, a.value * b.value ) )
+				set( new(tokens.number, a.value * b.value) )
 			end
 		elseif self.value == "/" then
 			if a.type == "number" and b.type == "number" then
-				set( new(tokens.number, a.value / b.value ) )
+				set( new(tokens.number, a.value / b.value) )
 			elseif a.type == "number" then
 				set( new(tokens.number, tonumber( ({tostring(a.value):gsub(tostring(b.value), "")})[1] ) ) )
 			else
@@ -142,7 +152,13 @@ return {
 	type = "if",
 	get = function(self, code, pos)
 		if starts(code, pos, "if") then
-			
+			local if_comp, i = compile(code, pos + 2, "do")
+			local do_func, r = functioniz(code, i, "end")
+			if if_comp:get_first().value == 0 then
+				return eat(do_func):get_first(), i - pos
+			else
+				return new(tokens.number, 5), r - pos
+			end
 		end
 	end
 },

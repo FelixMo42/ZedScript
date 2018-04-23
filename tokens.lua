@@ -2,58 +2,6 @@
 
 tokens = {
 
----- **** DATA **** ----
-
---[[ number ]] {
-	type = "number",
-	get = function(self, code, pos)
-		if (code:sub(pos, pos) ~= " " and tonumber(code:sub(pos, pos + 1)) ~= nil) or tonumber(code:sub(pos, pos)) then
-			local leng = 0
-			while pos + leng + 1 <= #code and tonumber(code:sub(pos, pos + leng + 1)) ~= nil do
-				leng = leng + 1
-			end
-			return new(self, tonumber(code:sub(pos, pos + leng))), leng + 1
-		end
-	end
-},
---[[ string ]] {
-	type = "string",
-	get = function(self, code, pos)
-		if code:sub(pos, pos) == "\"" then
-			local leng = 0
-			while pos + leng + 1 <= #code and code:sub(pos + leng + 1, pos + leng + 1) ~= "\"" do
-				leng = leng + 1
-			end
-			return new(self, code:sub(pos + 1, pos + leng)), leng + 2
-		end
-		if code:sub(pos, pos) == "'" then
-			local leng = 0
-			while pos + leng + 1 <= #code and code:sub(pos + leng + 1, pos + leng + 1) ~= "'" do
-				leng = leng + 1
-			end
-			return new(self, code:sub(pos + 1, pos + leng)), leng + 2
-		end
-	end
-},
---[[ bool ]] {
-	type = "bool",
-	get = function(self, code, pos)
-		if starts(code, pos, "true") then
-			return new(self, true)
-		elseif starts(code, pos, "false") then
-			return new(self, false)
-		end
-	end
-},
---[[ nil ]] {
-	type = "nil",
-	get = function(self, code, pos)
-		if starts(code, pos, "nil") then
-			return new(self), 3
-		end
-	end
-},
-
 ---- **** OPERATORS **** ----
 
 --[[ braks ]] {
@@ -145,6 +93,93 @@ tokens = {
 		end
 	end
 },
+--[[ comper ]] {
+	type = "comper",
+	get = function(self, code, pos)
+		if code:sub(pos, pos + 1) == "==" then
+			return new(self, code:sub(pos, pos + 1)), 2
+		elseif code:sub(pos, pos + 1) == "<=" then
+			return new(self, code:sub(pos, pos + 1)), 2
+		elseif code:sub(pos, pos) == "<" then
+			return new(self, code:sub(pos, pos)), 1
+		elseif code:sub(pos, pos + 1) == ">=" then
+			return new(self, code:sub(pos, pos + 1)), 2
+		elseif code:sub(pos, pos) == ">" then
+			return new(self, code:sub(pos, pos)), 1
+		end
+	end,
+	eat = function(self)
+		local a = pull(-1)
+		local b = pull(1)
+		if self.value == "==" then
+			set( new(tokens.bool, a.value == b.value) )
+		elseif self.value == "<=" then
+			set( new(tokens.bool, a.value <= b.value) )
+		elseif self.value == "<" then
+			set( new(tokens.bool, a.value < b.value) )
+		elseif self.value == ">=" then
+			set( new(tokens.bool, a.value >= b.value) )
+		elseif self.value == ">" then
+			set( new(tokens.bool, a.value > b.value) )
+		end
+	end
+},
+
+---- **** DATA **** ----
+
+--[[ number ]] {
+	type = "number",
+	isdata = true,
+	get = function(self, code, pos)
+		if (code:sub(pos, pos) ~= " " and tonumber(code:sub(pos, pos + 1)) ~= nil) or tonumber(code:sub(pos, pos)) then
+			local leng = 0
+			while pos + leng + 1 <= #code and tonumber(code:sub(pos, pos + leng + 1)) ~= nil do
+				leng = leng + 1
+			end
+			return new(self, tonumber(code:sub(pos, pos + leng))), leng + 1
+		end
+	end
+},
+--[[ string ]] {
+	type = "string",
+	isdata = true,
+	get = function(self, code, pos)
+		if code:sub(pos, pos) == "\"" then
+			local leng = 0
+			while pos + leng + 1 <= #code and code:sub(pos + leng + 1, pos + leng + 1) ~= "\"" do
+				leng = leng + 1
+			end
+			return new(self, code:sub(pos + 1, pos + leng)), leng + 2
+		end
+		if code:sub(pos, pos) == "'" then
+			local leng = 0
+			while pos + leng + 1 <= #code and code:sub(pos + leng + 1, pos + leng + 1) ~= "'" do
+				leng = leng + 1
+			end
+			return new(self, code:sub(pos + 1, pos + leng)), leng + 2
+		end
+	end
+},
+--[[ bool ]] {
+	type = "bool",
+	isdata = true,
+	get = function(self, code, pos)
+		if starts(code, pos, "true") then
+			return new(self, true), 4
+		elseif starts(code, pos, "false") then
+			return new(self, false), 5
+		end
+	end
+},
+--[[ nil ]] {
+	type = "nil",
+	isdata = true,
+	get = function(self, code, pos)
+		if starts(code, pos, "nil") then
+			return new(self), 3
+		end
+	end
+},
 
 ---- **** STRUCTURE **** ----
 
@@ -154,10 +189,10 @@ tokens = {
 		if starts(code, pos, "if") then
 			local if_comp, i = compile(code, pos + 2, "do")
 			local do_func, r = functioniz(code, i, "end")
-			if if_comp:get_first().value == 0 then
+			if if_comp:get_first().value then
 				return eat(do_func):get_first(), i - pos
 			else
-				return new(tokens.number, 5), r - pos
+				return new(tokens["nil"]), r - pos
 			end
 		end
 	end
@@ -183,15 +218,17 @@ tokens = {
 --[[ var ]] {
 	type = "var",
 	get = function(self, code, pos)
-		if code:sub(pos, pos):match("%W") then return end
+		if code:sub(pos, pos):match("[^%wπ]") then return end
 		local leng = 0
-		while pos + leng + 1 <= #code and not code:sub(pos + leng + 1, pos + leng + 1):match("%W") do
+		while pos + leng + 1 <= #code and not code:sub(pos + leng + 1, pos + leng + 1):match("[^%wπ]") do
 			leng = leng + 1
 		end
 		local name = code:sub(pos, pos + leng)
 		local var = vars[name] or new(tokens["nil"])
 		vars[name] = var
-		return setmetatable( {}, {
+		return setmetatable( {
+			isdata = true
+		}, {
 			__newindex = function(self, key, val)
 				if key == "type" then
 					getmetatable(var).__index = tokens[val]

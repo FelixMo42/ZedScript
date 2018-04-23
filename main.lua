@@ -1,16 +1,3 @@
---set up
-
-require "linked"
-require "tokens"
-
-for k, v in pairs(tokens) do
-	tokens[v.type] = v
-end
-
-vars = {}
-debug = false
-exit = false
-
 --functions
 
 function new(self, val)
@@ -26,12 +13,38 @@ end
 function starts(code, pos, val, pat)
 	pat = pat or "%W"
 	local s = #val
-	return code:sub(pos, pos + s - 1) == val and code:sub(pos + s, pos + s):match(pat)
+	if code:sub(pos, pos + s - 1) == val then
+		local l = code:sub(pos + s, pos + s)
+		if l == "" then
+			return true
+		else
+			return l:match(pat)
+		end
+	else
+		return false
+	end
 end
+
+--set up
+
+require "linked"
+require "tokens"
+
+for k, v in pairs(tokens) do
+	tokens[v.type] = v
+end
+
+vars = {
+	e = new(tokens.number, 2.718281828459),
+	["π"] = new(tokens.number, math.pi)
+}
+debug = false
+exit = false
 
 --main funcs
 
 function tokenize(code, pos, comp, stop)
+	--print( starts(code, pos, "==") )
 	if pos > #code then
 		return comp, pos + 1, false
 	end
@@ -53,7 +66,7 @@ function tokenize(code, pos, comp, stop)
 
 			if debug then
 				for v in comp:loop() do
-					print((v.value or " ").." - "..v.type)
+					print(tostring(v.value or " ").." - "..v.type)
 				end
 				print("---------")
 			end
@@ -85,7 +98,7 @@ function eat(comp)
 
 					if debug then
 						for v in comp:loop() do
-							print((v.value or " ").." - "..v.type)
+							print(tostring(v.value or " ").." - "..v.type)
 						end
 						print("---------")
 					end
@@ -131,7 +144,7 @@ function compile(code, pos, stop)
 		if debug then
 			print("====== eat:")
 			for v in comp:loop() do
-				print((v.value or " ").." - "..v.type)
+				print(tostring(v.value or " ").." - "..v.type)
 			end
 			print("---------")
 		end
@@ -150,9 +163,12 @@ end
 
 while not exit do
 	io.write("> ")
-	code = io.read("*l")
+	local code = io.read("*l")
 	if code:find("exit") or exit then
 		break
 	end
-	print( ({(compile(code):get_first().value.." "):gsub( "%.0" , "" )})[1] )
+	local first = compile(code):get_first()
+	if first.value ~= nil then
+		print( ({(tostring(first.value).." "):gsub("%.0", "")})[1] )
+	end
 end

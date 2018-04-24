@@ -1,7 +1,12 @@
 #!/bin/sh
+
 dir=${0%/*}
 if [ "$dir" = "$0" ]; then
 	dir="."
 fi
 
-./lua main.lua $dir
+if [ -z ${1+x} ]; then
+	./lua "line.lua" $dir
+else
+	./lua "file.lua" $dir $1
+fi

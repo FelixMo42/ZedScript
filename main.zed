@@ -1,0 +1,5 @@
+if false do
+	3
+else
+	5
+end

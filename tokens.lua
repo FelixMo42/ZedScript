@@ -14,6 +14,9 @@ tokens = {
 			comp, i = compile(code, pos + 1, ")")
 			return comp:get_first(), i - pos
 		end
+	end,
+	eat = function(self)
+		
 	end
 },
 --[[ power ]] {
@@ -106,6 +109,8 @@ tokens = {
 			return new(self, code:sub(pos, pos + 1)), 2
 		elseif code:sub(pos, pos) == ">" then
 			return new(self, code:sub(pos, pos)), 1
+		elseif code:sub(pos, pos + 1) == "!=" then
+			return new(self, code:sub(pos, pos + 1)), 2
 		end
 	end,
 	eat = function(self)
@@ -121,6 +126,8 @@ tokens = {
 			set( new(tokens.bool, a.value >= b.value) )
 		elseif self.value == ">" then
 			set( new(tokens.bool, a.value > b.value) )
+		elseif self.value == "!=" then
+			set( new(tokens.bool, a.value ~= b.value) )
 		end
 	end
 },
@@ -188,13 +195,80 @@ tokens = {
 	get = function(self, code, pos)
 		if starts(code, pos, "if") then
 			local if_comp, i = compile(code, pos + 2, "do")
-			local do_func, r = functioniz(code, i, "end")
-			if if_comp:get_first().value then
-				return eat(do_func):get_first(), i - pos
-			else
-				return new(tokens["nil"]), r - pos
+			local outputs, last = {}, "if"
+			while true do
+				local do_func, r, stop = functioniz(code, i, {"elseif", "else", "end"})
+				outputs[#outputs + 1] = do_func
+				
+				if last == "else" then
+					outputs["else"] = do_func
+				end
+				
+				if stop == "end" then
+					if if_comp:get_first().value then
+						return eat(outputs[1]):get_first(), i - pos
+					elseif outputs["else"] then
+						return eat(outputs["else"]):get_first(), r - pos
+					else
+						return new(tokens["nil"]), r - pos
+					end
+				end
+
+				i = r
+				last = stop
 			end
 		end
+	end
+},
+--[[ not ]] {
+	type = "not",
+	get = function(self, code, pos)
+		if starts(code, pos, "not") then
+			return new(self, "not"), 3
+		end
+	end,
+	eat = function(self)
+		local a = pull(1).value
+		set( new(tokens.bool, not a) )
+	end
+},
+--[[ and ]] {
+	type = "and",
+	get = function(self, code, pos)
+		if starts(code, pos, "and") then
+			return new(self, "and"), 3
+		end
+	end,
+	eat = function(self)
+		local a = pull(-1).value
+		local b = pull(1).value
+		set( new(tokens.bool, a and b) )
+	end
+},
+--[[ or ]] {
+	type = "or",
+	get = function(self, code, pos)
+		if starts(code, pos, "or") then
+			return new(self, "or"), 2
+		end
+	end,
+	eat = function(self)
+		local a = pull(-1).value
+		local b = pull(1).value
+		set( new(tokens.bool, a or b) )
+	end
+},
+--[[ xor ]] {
+	type = "xor",
+	get = function(self, code, pos)
+		if starts(code, pos, "xor") then
+			return new(self, "xor"), 3
+		end
+	end,
+	eat = function(self)
+		local a = pull(-1).value
+		local b = pull(1).value
+		set( new(tokens.bool, (a or b) and not (a and b) ) )
 	end
 },
 

@@ -44,13 +44,18 @@ exit = false
 --main funcs
 
 function tokenize(code, pos, comp, stop)
-	--print( starts(code, pos, "==") )
 	if pos > #code then
-		return comp, pos + 1, false
+		return comp, pos + 1, false, 0
 	end
-	
-	if stop and starts(code, pos, stop) then
-		return comp, pos + #stop, true
+
+	if type(stop) == "string" and starts(code, pos, stop) then
+		return comp, pos + #stop, true, stop
+	elseif type(stop) == "table" then
+		for k, v in pairs(stop) do
+			if starts(code, pos, v) then
+				return comp, pos + #v, true, v
+			end
+		end
 	end
 
 	for i, token in pairs(tokens) do
@@ -113,6 +118,7 @@ function eat(comp)
 end
 
 function functioniz(code, pos, stop)
+	local ret, cause = false, 0
 	local comp = linked()
 
 	while pos <= #code do
@@ -120,17 +126,18 @@ function functioniz(code, pos, stop)
 			print("==== token:")
 		end
 
-		comp, pos, ret = tokenize(code, pos, comp, stop)
+		comp, pos, ret, cause = tokenize(code, pos, comp, stop)
 
 		if ret then
 			break
 		end
 	end
 
-	return comp, pos
+	return comp, pos, cause
 end
 
 function compile(code, pos, stop)
+	local ret, cause = false, 0
 	local comp = linked()
 	local pos = pos or 1
 
@@ -156,7 +163,7 @@ function compile(code, pos, stop)
 		end
 	end
 
-	return comp, pos
+	return comp, pos, cause
 end
 
 --main loop
